@@ -7,8 +7,19 @@ serverPort = 50000
 serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 serverSocket.bind(('',serverPort))
 serverSocket.listen(0)
+
+jogadores = [];
+jsonJogadores = {};
+
 campos = [];
-pontuacao = 0;
+
+posicoes = [];
+coord = [];
+
+resposta = {};
+pontuacoes = []
+
+rodadas = 0
 print("Servidor pronto para recever")
 
 while True:
@@ -16,10 +27,21 @@ while True:
     print("Conexão vinda de {}".format(addr))
     message = connectionSocket.recv(2048)
     print ("{} ==> {}".format(addr, message.decode("utf-8")))
-    
+    idJogador = format(addr)
     dados = json.loads(message.decode("utf-8"))
 
+    if (idJogador not in jogadores):
+        jogadores.append(idJogador)
+        pontuacoes[idJogador] = 0
+        json[idJogador] = {}
+        json[idJogador]['pontos'] = 0
+        json[idJogador]['conexao'] = connectionSocket
+
+    if(dados['reiniciar'] == True):
+        campos = []
+    
     if(dados['iniciar'] == True):
+        
         tamGrid = dados['dificuldade']
 
         grid = 0
@@ -36,28 +58,52 @@ while True:
             bombas = 20
         
         score = 0;
-        campos = gerarCampoMinado(grid, bombas);
+        campos = gerarCampoMinado(grid + len(jogadores), bombas + len(jogadores));
     
-    elif(dados['continuar'] == True):
+    elif(dados['linha'] != -1):
+        rodadas += 1
         linha = (dados['linha']);
         coluna = (dados['coluna']);
 
         if(campos[linha][coluna] != 'B'):
-            pontuacao += 1
+            json[idJogador]['pontos'] += 1
+            pontuacoes[idJogador] = json[idJogador]['pontos']
+        
+        coord = [];
+        coord.append(linha);
+        coord.append(coluna);
+        posicoes.append(coord);
+        i = 0
+        ranking = sorted(pontuacoes, reverse=True)
+        while(i < len(pontuacoes)):
+            if(pontuacoes[idJogador]==ranking[i]):
+                colocacao = i;
+                break;
+        
         resposta = {
+            "posicoes" : posicoes,
             "valor": campos[linha][coluna],
-            "pontuacao": pontuacao
+            "qtdJogadores" : len(jogadores),
+            'posicaoNaPartida' : colocacao,
+            'rodadas' : rodadas
         }
-
-        jsonRespsota = json.dumps(resposta)
-        connectionSocket.send(jsonRespsota.encode("utf-8"))
+    
+    elif(dados['linha'] == -1):
+        resposta = {
+            "posicoes" : posicoes,
+        }
+    
+    jsonJogadores[idJogador]['resposta'] = resposta
+        
+    for j in jogadores:
+        jsonJogadores[j]['conexao'].send(jsonJogadores.encode("utf-8"))
 
     connectionSocket.close()
     
 
 
 def gerarCampoMinado(g, b):
-    campos = [[0 for row in range(g)] for column in range(l)]
+    campos = [[0 for row in range(g)] for column in range(g)]
     for num in range(b):
         x = random.randint(0,g-1)
         y = random.randint(0,g-1)
