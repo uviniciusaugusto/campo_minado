@@ -1,5 +1,4 @@
 import random
-
 import socket
 import json
 
@@ -10,15 +9,12 @@ serverSocket.listen(0)
 
 jogadores = [];
 jsonJogadores = {};
-
 campos = [];
-
 posicoes = [];
 coord = [];
-
 resposta = {};
 pontuacoes = []
-
+rodada = 0;
 rodadas = 0
 print("Servidor pronto para recever")
 
@@ -40,7 +36,7 @@ while True:
     if(dados['reiniciar'] == True):
         campos = []
     
-    if(dados['iniciar'] == True):
+    if(dados['iniciar'] == True or len(campos)<1):
         
         tamGrid = dados['dificuldade']
 
@@ -67,7 +63,10 @@ while True:
 
         if(campos[linha][coluna] != 'B'):
             json[idJogador]['pontos'] += 1
-            pontuacoes[idJogador] = json[idJogador]['pontos']
+            i = 0
+            while i < len(jogadores): 
+                if(jogadores[i] == idJogador):
+                    pontuacoes[i] = json[idJogador]['pontos']
         
         coord = [];
         coord.append(linha);
@@ -92,15 +91,21 @@ while True:
         resposta = {
             "posicoes" : posicoes,
         }
-    
     jsonJogadores[idJogador]['resposta'] = resposta
-        
+    
+    rodada += 1
+    if(rodada >= len(jogadores)):
+        rodada = 0
+  
+    for j in jogadores:
+        jsonJogadores[j]['suaVez'] == False
+    jsonJogadores[rodada]['suaVez'] == True
+    
     for j in jogadores:
         jsonJogadores[j]['conexao'].send(jsonJogadores.encode("utf-8"))
 
-    connectionSocket.close()
-    
-
+for j in jogadores:
+    jsonJogadores[j]['conexao'].close()
 
 def gerarCampoMinado(g, b):
     campos = [[0 for row in range(g)] for column in range(g)]
