@@ -45,6 +45,6 @@ while(True):
     clientSocket.close()
     if(jsonResposta['resposta']['valor']== -1):
         print("Você perdeu")
-        break;
-    else
+        break
+    else:
         print("\nValor da casa: ",jsonResposta['resposta']['valor'] )
